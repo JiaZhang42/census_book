@@ -1,0 +1,49 @@
+---
+title: "Chapter 1-4"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Decennial US Census
+
+a complete enumeration of the US population
+
+## **American Community Survey (ACS)**
+
+The premier source of detailed demographic information about the US population.
+
+ACS data are distinct from decennial Census data in that data represent *estimates* rather than precise counts, and in turn are characterized by *margins of error* around those estimates.
+
+other surveys:
+
+<https://www.census.gov/programs-surveys/surveys-programs.html>
+
+![](images/clipboard-1642780657.png)
+
+University of Minnesota’s [National Historical Geographic Information System, or NHGIS](https://www.nhgis.org/) is a third-party distributor which provides access to ACS data as well as decennial Census data back to 1790. `ipumsr` is a package to interact with the third-party data from Minnesota.
+
+```{r}
+#| eval: false
+pak::pak("walkerke/tidycensus")
+```
+
+## Tidycensus
+
+These core functions in **tidycensus** include:
+
+-   [`get_decennial()`](https://walker-data.com/tidycensus/reference/get_decennial.html), which requests data from the US Decennial Census APIs for 2000, 2010, and 2020.
+
+-   [`get_acs()`](https://walker-data.com/tidycensus/reference/get_acs.html), which requests data from the 1-year and 5-year American Community Survey samples. Data are available from the 1-year ACS back to 2005 and the 5-year ACS back to 2005-2009.
+
+-   [`get_estimates()`](https://walker-data.com/tidycensus/reference/get_estimates.html), an interface to the Population Estimates APIs. These datasets include yearly estimates of population characteristics by state, county, and metropolitan area, along with components of change demographic estimates like births, deaths, and migration rates.
+
+-   [`get_pums()`](https://walker-data.com/tidycensus/reference/get_pums.html), which accesses data from the ACS Public Use Microdata Sample APIs. These samples include anonymized individual-level records from the ACS organized by household and are highly useful for many different social science analyses. [`get_pums()`](https://walker-data.com/tidycensus/reference/get_pums.html) is covered in more depth in Chapters [9](https://walker-data.com/census-r/introduction-to-census-microdata.html#introduction-to-census-microdata) and [10](https://walker-data.com/census-r/analyzing-census-microdata.html#analyzing-census-microdata).
+
+-   [`get_flows()`](https://walker-data.com/tidycensus/reference/get_flows.html), an interface to the ACS Migration Flows APIs. Includes information on in- and out-flows from various geographies for the 5-year ACS samples, enabling origin-destination analyses.
+
+```{r}
+library(tidycensus)
+census_api_key(Sys.getenv('CENSUS_API_KEY'), install = T)
+```
