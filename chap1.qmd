@@ -45,5 +45,47 @@ These core functions in **tidycensus** include:
 
 ```{r}
 library(tidycensus)
-census_api_key(Sys.getenv('CENSUS_API_KEY'), install = T)
+total_population_10 <- get_decennial(
+  geography = "state", 
+  variables = "P001001",
+  year = 2010
+)
+```
+
+```{r}
+born_in_mexico <- get_acs(
+  geography = "state", 
+  variables = "B05006_150",
+  year = 2020
+)
+```
+
+## Searching for variables
+
+```{r}
+load_variables(year = 2020, dataset = 'pl')
+```
+
+```{r}
+median_age_20 <- get_acs(
+  geography = 'county', 
+  variables = 'B01002_001', 
+  year = 2020, 
+  show_call = T
+)
+
+var20 <- load_variables(year = 2020, dataset = 'acs5')
+```
+
+## Visualization
+
+```{r}
+ga_wide <- get_acs(
+  geography = 'county', 
+  state = 'Georgia', 
+  variables = c(medinc = "B19013_001",
+                medage = "B01002_001"), 
+  output = 'wide',
+  year = 2020
+)
 ```

@@ -1,0 +1,257 @@
+---
+title: "Spatial Statistics for Data Science Chap 1, 2, 3, 6"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Types of spatial data
+
+Spatial data can be thought of as resulting from observations of a stochastic process
+
+$${Z(s): s \in D \subset R^d}$$
+
+where $D$ is a set of $R^d, d = 2$, and $Z(s)$ denotes the attribute we observe at $s$. Three types of spatial data are distinguished through the characteristics of the domain $D$, namely, areal (or lattice) data, geostatistical data, and point patterns ([Cressie 1993](https://www.paulamoraga.com/book-spatial/references.html#ref-cressie93)). Below we describe each of the data types, and give examples of these data in different settings.
+
+-   **areal data**: $D$ is a fixed countable collection of (regular or irregular) areal units at which variables are observed. e.g., county-level data
+
+-   **geostatistical data**: The spatial index $s$ varies continuously in space and therefore $Z(s)$ can be observed everywhere within $D$. But the data usually only covers several known locations. e.g., housing price, Malaria prevalence.
+
+-   **point patterns**: $D$ is random. $Z(s)$ may be equal to 1 $\forall 1 \in D$, indicating occurrence of the event, or random, giving some additional information. e.g., fires in a forest
+
+-   spatial temporal
+
+-   spatial functional
+
+-   mobility (flow) data
+
+## Spatial data in r
+
+Spatial data can be represented using vector and raster data. **Vector data** is used to display points, lines, and polygons, and possibly associated information. Vector data may represent, for example, locations of monitoring stations, road networks, or municipalities of a country. **Raster data** are regular grids with cells of equal size that are used to store values of spatially continuous phenomena, such as elevation, temperature, or air pollution values.
+
+### Vector data
+
+Vector data are often represented using a data storage format called shapefile. Note that a shapefile is not a single file but a collection of related files. A shapefile has three mandatory files, namely, `.shp` which contains the geometry data, `.shx` which is a positional index of the geometry data that allows to seek forward and backward the `.shp` file, and `.dbf` which stores the attributes for each shape. Other files that may form a shapefile include `.prj` which is a plain text file describing the projection, `.sbn` and `.sbx` which are spatial indices of the geometry data, and `.shp.xml` which contains spatial metadata in XML format. Therefore, when working with a shapefile, it is important to obtain all files that compose the shapefile and not only the `.shp` file with the geometry data.
+
+```{r}
+library(sf)
+pathshp <- system.file("shape/nc.shp", package = "sf")
+map <- st_read(pathshp, quiet = TRUE)
+class(map)
+map
+plot(map[1]) #plot the first field (column)
+```
+
+### Raster data (grid data)
+
+Raster data often come in GeoTIFF format which has extension `.tif`. **terra** is the main package to work with raster data.
+
+```{r}
+library(terra)
+pathraster <- system.file("ex/elev.tif", package = "terra")
+r <- terra::rast(pathraster)
+r
+plot(r)
+```
+
+### **Coordinate Reference Systems**
+
+Locations on the Earth can be referenced using unprojected (also called geographic) or projected CRSs. The unprojected or **geographic CRS** uses latitude and longitude values to represent locations on the Earth’s three-dimensional ellipsoid surface. A **projected CRS** uses Cartesian coordinates to reference a location on a two-dimensional representation of the Earth.
+
+Functions [`sf::st_crs()`](https://r-spatial.github.io/sf/reference/st_crs.html) and [`terra::crs()`](https://rdrr.io/pkg/terra/man/crs.html) allow us to get the CRS of spatial data. These functions also allow us to set a CRS to spatial data by using `st_crs(x) <- value` if `x` is a `sf` object, and `crs(r) <- value` if `r` is a raster. We use [`sf::st_transform()`](https://r-spatial.github.io/sf/reference/st_transform.html) and [`terra::project()`](https://rdrr.io/pkg/terra/man/project.html) to transform the **sf** or **raster** data, respectively, to a new CRS.
+
+## Vector data with `sf`
+
+```{r}
+plot(map)
+map[1, "NWBIR74"]
+map[1, 'NWBIR74', drop = TRUE]
+
+st_geometry(map)
+st_geometry(map)[[1]]
+```
+
+an `sf` object (like `map` above) is composed of
+
+-   a data.frame attached to each simple feature geometry
+
+-   an sf column (`sfc`) containing the simple feature geometries (`sfg`)
+
+```{r}
+# Single point (point as a vector)
+p1_sfg <- st_point(c(2, 2))
+p2_sfg <- st_point(c(2.5, 3))
+
+# Set of points (points as a matrix)
+p <- rbind(c(6, 2), c(6.1, 2.6), c(6.8, 2.5),
+           c(6.2, 1.5), c(6.8, 1.8))
+mp_sfg <- st_multipoint(p)
+
+# Polygon. Sequence of points that form a closed,
+# non-self intersecting ring.
+# The first ring denotes the exterior ring,
+# zero or more subsequent rings denote holes in the exterior ring
+p1 <- rbind(c(10, 0), c(11, 0), c(13, 2),
+            c(12, 4), c(11, 4), c(10, 0))
+p2 <- rbind(c(11, 1), c(11, 2), c(12, 2), c(11, 1))
+pol_sfg <- st_polygon(list(p1, p2))
+
+# Create sf object
+p_sfc <- st_sfc(p1_sfg, p2_sfg, mp_sfg, pol_sfg)
+df <- data.frame(v1 = c("A", "B", "C", "D"))
+p_sf <- st_sf(df, geometry = p_sfc)
+
+# Plot single points, set of points and polygon
+library(ggplot2)
+ggplot(p_sf) + geom_sf(aes(col = v1), size = 3) + theme_bw()
+```
+
+Common functions to manipulate `sf` objects include the following:
+
+-   [`st_read()`](https://r-spatial.github.io/sf/reference/st_read.html) reads a `sf` object,
+
+-   [`st_write()`](https://r-spatial.github.io/sf/reference/st_write.html) writes a `sf` object,
+
+-   [`st_crs()`](https://r-spatial.github.io/sf/reference/st_crs.html) gets or sets a new coordinate reference system (CRS),
+
+-   [`st_transform()`](https://r-spatial.github.io/sf/reference/st_transform.html) transforms data to a new CRS,
+
+-   [`st_intersection()`](https://r-spatial.github.io/sf/reference/geos_binary_ops.html) intersects `sf` objects,
+
+-   [`st_union()`](https://r-spatial.github.io/sf/reference/geos_combine.html) combines several `sf` objects into one,
+
+-   [`st_simplify()`](https://r-spatial.github.io/sf/reference/geos_unary.html) simplifies a `sf` object,
+
+-   [`st_coordinates()`](https://r-spatial.github.io/sf/reference/st_coordinates.html) retrieves coordinates of a `sf` object,
+
+-   [`st_as_sf()`](https://r-spatial.github.io/sf/reference/st_as_sf.html) converts a foreign object to a `sf` object.
+
+```{r}
+map <- map[-which(map$FIPS %in% c("37125", "37051")), ]
+ggplot(map) + geom_sf(aes(fill = SID79))
+
+# Delete polygon
+map[-which(map$FIPS %in% c("37125", "37051")), ] %>% 
+  ggplot() + 
+  geom_sf(aes(fill = SID79))
+
+# Combine geometries
+ggplot(st_union(map, by_feature = FALSE) %>% st_sf()) + geom_sf()
+
+# Simplify
+ggplot(st_simplify(map, dTolerance = 10000)) + geom_sf()
+
+st_coordinates(p1_sfg)
+```
+
+```{r}
+d <- data.frame(
+place = c("London", "Paris", "Madrid", "Rome"),
+long = c(-0.118092, 2.349014, -3.703339, 12.496366),
+lat = c(51.509865, 48.864716, 40.416729, 41.902782),
+value = c(200, 300, 400, 500))
+
+dsf <- st_as_sf(d, coords = c("long", "lat"))
+st_crs(dsf) <- 4326
+class(dsf)
+
+ggplot(dsf) + 
+  geom_sf(aes(col = value))
+```
+
+```{r}
+points <- st_sample(map, size = 200)
+ggplot() + geom_sf(data = map) + geom_sf(data = points)
+inter <- st_intersects(map, points)
+inter
+```
+
+Joining map and data
+
+```{r}
+library(rnaturalearth)
+map <- ne_countries(returnclass = "sf")
+map
+
+library(wbstats)
+indicators <- wb_search(pattern = "pollution")
+d <- wb_data('EN.ATM.PM25.MC.M3', start_date = 2016, end_date = 2016)
+d
+
+library(tidyverse)
+map %>% 
+  left_join(d, join_by(iso_a3 == iso3c)) %>% 
+  ggplot() + 
+  geom_sf(aes(fill = EN.ATM.PM25.MC.M3)) + 
+  labs(fill = 'PM2.5') + 
+  theme_bw() + 
+  ggsci::scale_fill_bs5('yellow')
+```
+
+## **R packages to download open spatial data**
+
+### Administrative boundaries
+
+We can download administrative boundaries of world countries with the **rnaturalearth** package ([South 2017](https://www.paulamoraga.com/book-spatial/references.html#ref-R-rnaturalearth)). Other packages can also be used to obtain data of specific countries such as the USA with **tidycensus** ([Walker and Herman 2023](https://www.paulamoraga.com/book-spatial/references.html#ref-R-tidycensus)) and **tigris** ([Walker 2023](https://www.paulamoraga.com/book-spatial/references.html#ref-R-tigris)), Spain with **mapSpain** ([Hernangomez 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-mapSpain)), and Brazil with **geobr** ([Pereira and Goncalves 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-geobr)). The **giscoR** package ([Hernangomez 2023a](https://www.paulamoraga.com/book-spatial/references.html#ref-R-giscoR)) helps to retrieve data from [Eurostat - GISCO (the Geographic Information System of the COmmission)](https://ec.europa.eu/eurostat/web/gisco) which contains several open data such as countries and coastal lines.
+
+```{r}
+pak::pak("ropensci/rnaturalearthhires")
+pak::pak('ropensci/rnaturalearthdata')
+map_china <- ne_countries(country = 'China', scale = 'medium', returnclass = 'sf')
+
+map_ch_provinces <- ne_states(country = 'China', returnclass = 'sf')
+p1 <- ggplot(map_china) + geom_sf()
+p2 <- ggplot(map_ch_provinces) + geom_sf()
+library(patchwork)
+p1 + p2
+```
+
+### **OpenStreetMap data**
+
+```{r}
+library(osmdata)
+available_features()
+available_tags('craft')
+```
+
+The first step in creating an `osmdata` query is defining the geographical area we wish to include in the query. This can be done by defining a bounding box that defines a geographical area by its bounding latitudes and longitudes. The bounding box for a given place name can be obtained with the [`getbb()`](https://docs.ropensci.org/osmdata/reference/getbb.html) function.
+
+```{r}
+placebb <- getbb("Barcelona")
+placebb
+```
+
+```{r}
+hospitals <- placebb %>% 
+  opq() %>%
+  add_osm_feature(key = "amenity", value = "hospital") %>%
+  osmdata_sf()
+motorways <- placebb %>% 
+  opq() %>%
+  add_osm_feature(key = "highway", value = "motorway") %>%
+  osmdata_sf()
+```
+
+```{r}
+library(leaflet)
+leaflet() %>%  
+  addTiles() %>%
+  addPolylines(data = motorways$osm_lines, color = "black") %>%
+  addPolygons(data = hospitals$osm_polygons,
+              label = hospitals$osm_polygons$name)
+```
+
+### **World Bank data**
+
+has been shown in "joining map and data"
+
+### **Population, health, and other spatial data**
+
+Other packages that can be used to obtain spatial data for the world or specific countries include the following: The **wopr** package ([Leasure et al. 2023](https://www.paulamoraga.com/book-spatial/references.html#ref-R-wopr)) provides access to the [WorldPop Open Population Repository](https://wopr.worldpop.org/) and provides estimates of **population sizes** for specific geographic areas. These data are collected by the WorldPop Hub (<https://hub.worldpop.org/>), which provides open high-resolution geospatial data on population count and density, demographic and dynamics, with a focus on low- and middle-income countries.
+
+The **rdhs** package ([Watson and Eaton 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-rdhs)) gives the users the ability to access and make analysis on the [Demographic and Health Survey (DHS)](https://dhsprogram.com/) data. The **malariaAtlas** package ([Pfeffer et al. 2020](https://www.paulamoraga.com/book-spatial/references.html#ref-R-malariaAtlas)) can be used to download, visualize and manipulate global malaria data hosted by the [Malaria Atlas Project](https://malariaatlas.org/). The **openair** package ([Carslaw, Davison, and Ropkins 2023](https://www.paulamoraga.com/book-spatial/references.html#ref-R-openair)) allows us to obtain air quality data and other atmospheric composition data.
+
+Many other spatial datasets are included in several packages mainly to demonstrate the packages’ functionality. For example, **spatstat** ([Baddeley, Turner, and Rubak 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-spatstat)) contains point pattern data that can be listed with `data(package="spatstat.data")`. The **spData** package ([Bivand, Nowosad, and Lovelace 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-spData)) also includes diverse spatial datasets that can be used for teaching spatial data analysis.
+
+R also has packages that allow us to geocode place names or addresses. For example, the packages **ggmap** ([Kahle, Wickham, and Jackson 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-ggmap)) and **opencage** ([Possenriede, Sadler, and Salmon 2021](https://www.paulamoraga.com/book-spatial/references.html#ref-R-opencage)) can be used to convert names to geographic coordinates.
