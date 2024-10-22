@@ -41,6 +41,15 @@ map <- st_read(pathshp, quiet = TRUE)
 class(map)
 map
 plot(map[1]) #plot the first field (column)
+
+# sf objects works with tidyverse functions and janitor
+map %>% 
+  filter(AREA > .1) %>% 
+  ggplot() + 
+  geom_sf(aes(fill = AREA))
+
+map %>% 
+  janitor::clean_names()
 ```
 
 ### Raster data (grid data)

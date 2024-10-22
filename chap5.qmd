@@ -1,0 +1,22 @@
+---
+title: "Chapter 5-7"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Tigris
+
+```{r}
+library(tigris)
+st <- states()
+st
+class(st)
+plot(st$geometry)
+```
+
+```{r}
+nm_counties <- counties('NW')
+
+```

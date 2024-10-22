@@ -1,0 +1,54 @@
+---
+title: "chap11"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+`tidycensus` focuses on datasets from the US Census Bureau’s APIs, which only covers data available from year 2000. For earlier data, check the [National Historical Geographic Information System (NHGIS) project](https://www.nhgis.org/) and the [Minnesota Population Center’s](https://pop.umn.edu/) [IPUMS project](https://ipums.org/) with `ipumsr`.
+
+## NHGIS
+
+```{r}
+library(tidyverse)
+library(ipumsr)
+library(sf)
+pop_1870 <- read_nhgis('data/nhgis0002_csv.zip')
+gis_1870 <- read_ipums_sf(
+  shape_file = 'data/nhgis0002_shape.zip'
+)
+
+pop_gis_1870 <- pop_1870 %>% 
+  left_join(gis_1870, join_by(GISJOIN)) %>% 
+  st_as_sf() %>% 
+  mutate(geometry = if_else(!st_is_valid(geometry), st_make_valid(geometry), geometry))
+
+pop_gis_1870 %>% st_drop_geometry() %>% View()
+
+st_crs(pop_gis_1870)
+
+invalid_geoms <- pop_gis_1870 %>% 
+  st_is_valid()
+pop_gis_1870_crs4326 <- pop_gis_1870 %>% 
+  st_transform(crs = 4326) %>% 
+  mutate(X_CENTROID = geometry %>% st_centroid() %>% st_coordinates() %>% .[,1], 
+         Y_CENTROID = geometry %>% st_centroid() %>% st_coordinates() %>% .[,2])
+
+pop_gis_1870_crs4326 %>% st_drop_geometry() %>% View()
+```
+
+```{r}
+plot(pop_gis_1870$geometry)
+
+pop_gis_1870 %>% 
+  ggplot() + 
+  geom_sf(aes(fill = AJ3001)) + 
+  theme_void()
+```
+
+```{r}
+library(geosphere)
+# distance in miles between two counties
+distHaversine(c(pop_gis_1870_crs4326$X_CENTROID[1], pop_gis_1870_crs4326$Y_CENTROID[1]), c(pop_gis_1870_crs4326$X_CENTROID[2], pop_gis_1870_crs4326$Y_CENTROID[2]))*0.000621371
+```

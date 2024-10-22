@@ -5,3 +5,5 @@
 *.html
 *_files/
 images/
+data/
+.DS_Store
